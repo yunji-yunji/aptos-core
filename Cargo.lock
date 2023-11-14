@@ -10407,8 +10407,7 @@ dependencies = [
  "anyhow",
  "arbitrary",
  "backtrace",
- "indexmap 1.9.3",
- "move-bytecode-spec",
+ "indexmap 2.2.5",
  "move-core-types",
  "proptest",
  "proptest-derive",
@@ -10466,7 +10465,7 @@ dependencies = [
  "move-binary-format",
  "move-borrow-graph",
  "move-core-types",
- "petgraph 0.5.1",
+ "petgraph 0.6.4",
  "serde",
  "typed-arena",
 ]

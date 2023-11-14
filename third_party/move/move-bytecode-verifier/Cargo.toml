@@ -12,9 +12,9 @@ edition = "2021"
 [dependencies]
 fail = { workspace = true }
 move-binary-format = { path = "../move-binary-format" }
-petgraph = { workspace = true }
-serde = { workspace = true }
-typed-arena = { workspace = true }
+petgraph = "0.6.4"
+serde = "1.0.149"
+typed-arena = "2.0.2"
 
 move-borrow-graph = { path = "../move-borrow-graph" }
 move-core-types = { path = "../move-core/types" }
