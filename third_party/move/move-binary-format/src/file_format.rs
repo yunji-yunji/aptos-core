@@ -46,10 +46,15 @@ use move_core_types::{
 };
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::vec, prelude::*, strategy::BoxedStrategy};
+// use proptest_derive::Arbitrary;
 use ref_cast::RefCast;
 use serde::{Deserialize, Serialize};
 use std::{fmt, fmt::Formatter, ops::BitOr};
 use variant_count::VariantCount;
+
+use rand::Rng;
+use rand::prelude::Distribution;
+use rand::distributions::Standard;
 
 /// Generic index into one of the tables in the binary format.
 pub type TableIndex = u16;
@@ -94,6 +99,14 @@ macro_rules! define_index {
                 self.0 as usize
             }
         }
+
+        impl Distribution<$name> for Standard {
+            fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> $name {
+                let rnd: TableIndex = rng.gen();
+                $name(rnd)
+            }
+        }
+
     };
 }
 
@@ -437,6 +450,22 @@ impl StructFieldInformation {
     }
 }
 
+// impl Distribution<StructFieldInformation> for Standard {
+//     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> StructFieldInformation {
+//         match rng.gen_range(0..=1) {
+//             0 => {
+//                 let mut field_defs: Vec<FieldDefinition> = vec!();
+//                 for _ in 0..rng.gen_range(0..4) {
+//                     mutate_vector(&field_defs, rand::random());
+//                 }
+//                 StructFieldInformation::Declared(field_defs)
+//             },
+//             1 => StructFieldInformation::Native,
+//             _ => StructFieldInformation::Native,
+//         }
+//     }
+// }
+
 //
 // Instantiations
 //
@@ -536,9 +565,19 @@ pub struct VariantDefinition {
     pub name: IdentifierIndex,
     pub fields: Vec<FieldDefinition>,
 }
+// FIX:my code?? remove?
+impl Distribution<FieldDefinition> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> FieldDefinition {
+        FieldDefinition {
+            name: rand::random(),
+            signature: TypeSignature(rand::random()),
+        }
+    }
+}
 
 /// `Visibility` restricts the accessibility of the associated entity.
 /// - For function visibility, it restricts who may call into the associated function.
+#[derive(VariantCount)]
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
 #[cfg_attr(any(test, feature = "fuzzing"), proptest(no_params))]
@@ -555,6 +594,18 @@ pub enum Visibility {
     // Script = 0x2,
     /// Accessible by this module as well as modules declared in the friend list.
     Friend = 0x3,
+}
+
+impl Distribution<Visibility> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Visibility {
+        const ENUM_SIZE: usize = Visibility::VARIANT_COUNT;
+        match rng.gen_range(0..ENUM_SIZE) {
+            0 => Visibility::Private,
+            1 => Visibility::Public,
+            2 => Visibility::Friend,
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl Visibility {
@@ -691,6 +742,20 @@ impl Signature {
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
+    }
+}
+
+impl Distribution<Signature> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Signature {
+        let params: i32 = 5; // TODO: who provide this "params"
+        let length: i32 = rng.gen_range(0..=params);
+        // println!("signature length = {:?}",length); // leng==4 => UNKNOWN_INVARIANT_VIOLATION_ERROR // 0 => no error
+        let mut sig = Signature(vec!());
+        for _ in 0..length {
+            let rand_token = rand::random();
+            sig.0.push(rand_token);
+        }
+        sig
     }
 }
 
@@ -950,6 +1015,20 @@ impl fmt::Display for AbilitySet {
     }
 }
 
+impl Distribution<AbilitySet> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> AbilitySet {
+        match rng.gen_range(0..=5) {
+            0 => AbilitySet::EMPTY,
+            1 => AbilitySet::PRIMITIVES,
+            2 => AbilitySet::REFERENCES,
+            3 => AbilitySet::SIGNER,
+            4 => AbilitySet::VECTOR,
+            5 => AbilitySet::ALL,
+            _ => AbilitySet::EMPTY,
+        }
+    }
+}
+
 impl BitOr<Ability> for AbilitySet {
     type Output = Self;
 
@@ -1180,6 +1259,49 @@ pub enum SignatureToken {
     U32,
     /// Unsigned integers, 256 bits length.
     U256,
+}
+
+// TODO: fix.. more random
+impl Distribution<SignatureToken> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> SignatureToken {
+        match rng.gen_range(0..=14) {
+            0 => SignatureToken::Bool,
+            1 => SignatureToken::U8,
+            2 => SignatureToken::U64,
+            3 => SignatureToken::U128,
+            4 => SignatureToken::Address,
+            5 => SignatureToken::Signer,
+            6 => {
+                let sig_token: SignatureToken = rand::random();
+                SignatureToken::Vector(Box::new(sig_token))
+            },
+            7 => {
+                let idx: StructHandleIndex = rand::random();
+                SignatureToken::Struct(idx)
+            },
+            8 => {
+                let idx: StructHandleIndex = rand::random();
+                let sig_token: SignatureToken = rand::random();
+                SignatureToken::StructInstantiation(idx, vec!(sig_token))
+            },
+            9 => {
+                let sig_token: SignatureToken = rand::random();
+                SignatureToken::Reference(Box::new(sig_token))
+            },
+            10 => {
+                let sig_token: SignatureToken = rand::random();
+                SignatureToken::MutableReference(Box::new(sig_token))
+            },
+            11 => {
+                let idx: TypeParameterIndex = rand::random();
+                SignatureToken::TypeParameter(idx)
+            },
+            12 => SignatureToken::U16,
+            13 => SignatureToken::U32,
+            14 => SignatureToken::U256,
+            _ => SignatureToken::Bool,
+        }
+    }
 }
 
 /// An iterator to help traverse the `SignatureToken` in a non-recursive fashion to avoid
@@ -1437,6 +1559,43 @@ pub struct Constant {
     pub data: Vec<u8>,
 }
 
+impl Distribution<Constant> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Constant {
+        let ty: SignatureToken = rand::random();
+        let mut l = 38; // TODO
+        match ty.clone() {
+            SignatureToken::Bool => { l = 1; }, //Boolean 1 byte.
+            SignatureToken::U8 => { l = 1; },
+            SignatureToken::U16 => { l = 2; },
+            SignatureToken::U32 => { l = 4; },
+            SignatureToken::U64 => { l = 8; },
+            SignatureToken::U128 => { l = 16; },
+            SignatureToken::U256 => { l = 32; },
+            SignatureToken::Address => { l = 16; },
+            SignatureToken::Signer => { l = 16; },
+            SignatureToken::Vector(boxed) => { l = 32; },
+            SignatureToken::Struct(idx) => { l = 32; },
+            SignatureToken::StructInstantiation(idx, types) =>  { l = 32; },
+            SignatureToken::Reference(boxed) => { l = 32; }
+            SignatureToken::MutableReference(boxed) =>  { l = 32; },
+            SignatureToken::TypeParameter(idx) =>  { l = 32; },
+            _ => { l = 1 }, // TODO
+        }
+
+        /*
+        let size_in_bytes = std::mem::size_of::<Address>();
+        let size_in_bits = size_in_bytes * 8;
+        println!("bytes={:?}, bits={:?}", size_in_bytes, size_in_bits);
+        */
+        let random_data: Vec<u8> = (0..l).map(|_| rng.gen()).collect();
+        Constant {
+            type_: ty,
+            data: random_data,
+        }
+    }
+}
+
+
 /// A `CodeUnit` is the body of a function. It has the function header and the instruction stream.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
@@ -1471,6 +1630,7 @@ pub struct CodeUnit {
 /// Bytecodes operate on a stack machine and each bytecode has side effect on the stack and the
 /// instruction stream.
 #[bytecode_spec]
+// #[derive(Arbitrary)]
 #[derive(Clone, Hash, Eq, VariantCount, PartialEq)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
 #[cfg_attr(any(test, feature = "fuzzing"), proptest(no_params))]
@@ -2909,6 +3069,201 @@ pub enum Bytecode {
     CastU256,
 }
 
+
+/* 
+// use arbitrary::Arbitrary;
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for Bytecode {
+    type Parameters = ();
+    type Strategy = BoxedStrategy<Self>;
+    // fn arbitrary(g: &mut Gen) -> Self {
+    //     // Generate random values for the fields of Bytecode
+    //     // You can use g or other methods provided by proptest to generate random values.
+    //     Bytecode {
+    //         // Initialize your fields here with generated values
+    //     }
+    // }
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        prop_oneof![
+            Just(Bytecode::Pop),
+            Just(Bytecode::Ret),
+            Just(Bytecode::BrTrue(rand::random())),
+            Just(Bytecode::BrFalse(rand::random())),
+            Just(Bytecode::Branch(rand::random())),
+            Just(Bytecode::LdU8(rand::random())),
+            Just(Bytecode::LdU16(rand::random())),
+            Just(Bytecode::LdU32(rand::random())),
+            Just(Bytecode::LdU64(rand::random())),
+            Just(Bytecode::LdU128(rand::random())),
+            Just(Bytecode::LdU256(rand::random())),
+            Just(Bytecode::CastU8),
+            Just(Bytecode::CastU16),
+            Just(Bytecode::CastU32),
+            Just(Bytecode::CastU64),
+            Just(Bytecode::CastU128),
+            Just(Bytecode::CastU256),
+            Just(Bytecode::LdConst(rand::random())),
+            Just(Bytecode::LdTrue),
+            Just(Bytecode::LdFalse),
+            Just(Bytecode::CopyLoc(rand::random())),
+            Just(Bytecode::MoveLoc(rand::random())),
+            Just(Bytecode::StLoc(rand::random())),
+            Just(Bytecode::Call(rand::random())),
+            Just(Bytecode::CallGeneric(rand::random())),
+            Just(Bytecode::Pack(rand::random())),
+            Just(Bytecode::PackGeneric(rand::random())),
+            Just(Bytecode::Unpack(rand::random())),
+            Just(Bytecode::UnpackGeneric(rand::random())),
+            Just(Bytecode::ReadRef),
+            Just(Bytecode::WriteRef),
+            Just(Bytecode::FreezeRef),
+            Just(Bytecode::MutBorrowLoc(rand::random())),
+            Just(Bytecode::ImmBorrowLoc(rand::random())),
+            Just(Bytecode::MutBorrowField(rand::random())),
+            Just(Bytecode::MutBorrowFieldGeneric(rand::random())),
+            Just(Bytecode::ImmBorrowField(rand::random())),
+            Just(Bytecode::ImmBorrowFieldGeneric(rand::random())),
+            Just(Bytecode::MutBorrowGlobal(rand::random())),
+            Just(Bytecode::MutBorrowGlobalGeneric(rand::random())),
+            Just(Bytecode::ImmBorrowGlobal(rand::random())),
+            Just(Bytecode::ImmBorrowGlobalGeneric(rand::random())),
+            Just(Bytecode::Add),
+            Just(Bytecode::Sub),
+            Just(Bytecode::Mul),
+            Just(Bytecode::Mod),
+            Just(Bytecode::Div),
+            Just(Bytecode::BitOr),
+            Just(Bytecode::BitAnd),
+            Just(Bytecode::Xor),
+            Just(Bytecode::Or),
+            Just(Bytecode::And),
+            Just(Bytecode::Not),
+            Just(Bytecode::Eq),
+            Just(Bytecode::Neq),
+            Just(Bytecode::Lt),
+            Just(Bytecode::Gt),
+            Just(Bytecode::Le),
+            Just(Bytecode::Ge),
+            Just(Bytecode::Abort),
+            Just(Bytecode::Nop),
+            Just(Bytecode::Exists(rand::random())),
+            Just(Bytecode::ExistsGeneric(rand::random())),
+            Just(Bytecode::MoveFrom(rand::random())),
+            Just(Bytecode::MoveFromGeneric(rand::random())),
+            Just(Bytecode::MoveTo(rand::random())),
+            Just(Bytecode::MoveToGeneric(rand::random())),
+            Just(Bytecode::Shl),
+            Just(Bytecode::Shr),
+            Just(Bytecode::VecPack(rand::random(), rng.gen())),
+            Just(Bytecode::VecLen(rand::random())),
+            Just(Bytecode::VecImmBorrow(rand::random())),
+            Just(Bytecode::VecMutBorrow(rand::random())),
+            Just(Bytecode::VecPushBack(rand::random())),
+            Just(Bytecode::VecPopBack(rand::random())),
+            Just(Bytecode::VecUnpack(rand::random(), rng.gen())),
+            Just(Bytecode::VecSwap(rand::random())),
+            Just(Bytecode::Nop),
+        ]
+        .boxed()
+    }
+
+}
+*/
+// use proptest::prelude::*;
+// impl Bytecode {
+//     pub fn tt() {
+//         proptest!(|(vec in prop::collection::vec(any::<Bytecode>(), 0..10))| {
+//             println!("prop vec {:?}", vec);
+//         });
+//     }
+// }
+
+impl Distribution<Bytecode> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Bytecode {
+        match rng.gen_range(0..=76) {
+            0 => Bytecode::Pop,
+            1 => Bytecode::Ret,
+            2 => Bytecode::BrTrue(rand::random()),
+            3 => Bytecode::BrFalse(rand::random()),
+            4 => Bytecode::Branch(rand::random()),
+            5 => Bytecode::LdU8(rand::random()),
+            6 => Bytecode::LdU16(rand::random()),
+            7 => Bytecode::LdU32(rand::random()),
+            8 => Bytecode::LdU64(rand::random()),
+            9 => Bytecode::LdU128(rand::random()),
+            10 => Bytecode::LdU256(rand::random()),
+            11 => Bytecode::CastU8,
+            12 => Bytecode::CastU16,
+            13 => Bytecode::CastU32,
+            14 => Bytecode::CastU64,
+            15 => Bytecode::CastU128,
+            16 => Bytecode::CastU256,
+            17 => Bytecode::LdConst(rand::random()),
+            18 => Bytecode::LdTrue,
+            19 => Bytecode::LdFalse,
+            20 => Bytecode::CopyLoc(rand::random()),
+            21 => Bytecode::MoveLoc(rand::random()),
+            22 => Bytecode::StLoc(rand::random()),
+            23 => Bytecode::Call(rand::random()),
+            24 => Bytecode::CallGeneric(rand::random()),
+            25 => Bytecode::Pack(rand::random()),
+            26 => Bytecode::PackGeneric(rand::random()),
+            27 => Bytecode::Unpack(rand::random()),
+            28 => Bytecode::UnpackGeneric(rand::random()),
+            29 => Bytecode::ReadRef,
+            30 => Bytecode::WriteRef,
+            31 => Bytecode::FreezeRef,
+            32 => Bytecode::MutBorrowLoc(rand::random()),
+            33 => Bytecode::ImmBorrowLoc(rand::random()),
+            34 => Bytecode::MutBorrowField(rand::random()),
+            35 => Bytecode::MutBorrowFieldGeneric(rand::random()),
+            36 => Bytecode::ImmBorrowField(rand::random()),
+            37 => Bytecode::ImmBorrowFieldGeneric(rand::random()),
+            38 => Bytecode::MutBorrowGlobal(rand::random()),
+            39 => Bytecode::MutBorrowGlobalGeneric(rand::random()),
+            40 => Bytecode::ImmBorrowGlobal(rand::random()),
+            41 => Bytecode::ImmBorrowGlobalGeneric(rand::random()),
+            42 => Bytecode::Add,
+            43 => Bytecode::Sub,
+            44 => Bytecode::Mul,
+            45 => Bytecode::Mod,
+            46 => Bytecode::Div,
+            47 => Bytecode::BitOr,
+            48 => Bytecode::BitAnd,
+            49 => Bytecode::Xor,
+            50 => Bytecode::Or,
+            51 => Bytecode::And,
+            52 => Bytecode::Not,
+            53 => Bytecode::Eq,
+            54 => Bytecode::Neq,
+            55 => Bytecode::Lt,
+            56 => Bytecode::Gt,
+            57 => Bytecode::Le,
+            58 => Bytecode::Ge,
+            59 => Bytecode::Abort,
+            60 => Bytecode::Nop,
+            61 => Bytecode::Exists(rand::random()),
+            62 => Bytecode::ExistsGeneric(rand::random()),
+            63 => Bytecode::MoveFrom(rand::random()),
+            64 => Bytecode::MoveFromGeneric(rand::random()),
+            65 => Bytecode::MoveTo(rand::random()),
+            66 => Bytecode::MoveToGeneric(rand::random()),
+            67 => Bytecode::Shl,
+            68 => Bytecode::Shr,
+            69 => Bytecode::VecPack(rand::random(), rng.gen()),
+            70 => Bytecode::VecLen(rand::random()),
+            71 => Bytecode::VecImmBorrow(rand::random()),
+            72 => Bytecode::VecMutBorrow(rand::random()),
+            73 => Bytecode::VecPushBack(rand::random()),
+            74 => Bytecode::VecPopBack(rand::random()),
+            75 => Bytecode::VecUnpack(rand::random(), rng.gen()),
+            76 => Bytecode::VecSwap(rand::random()),
+            _ => Bytecode::Nop,
+        }
+    }
+}
+
+
 impl ::std::fmt::Debug for Bytecode {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
@@ -3172,6 +3527,79 @@ pub struct CompiledModule {
     pub struct_variant_instantiations: Vec<StructVariantInstantiation>,
     pub variant_field_handles: Vec<VariantFieldHandle>,
     pub variant_field_instantiations: Vec<VariantFieldInstantiation>,
+}
+
+#[derive(Debug, VariantCount, Clone, Copy)]
+pub enum CompiledModuleField {
+    VERSION,
+    SELF_MODULE_HANDLE_IDX,
+    MODULE_HANDLES,
+    STRUCT_HANDLES,
+    FUNCTION_HANDLES,
+    FIELD_HANDLES,
+    FRIEND_DECLS,
+    STRUCT_DEF_INSTANTIATIONS,
+    FUNCTION_INSTANTIATIONS,
+    FIELD_INSTANTIATIONS,
+    SIGNATURES,
+    IDENTIFIERS,
+    ADDRESS_IDENTIFIERS,
+    CONSTANT_POOL,
+    METADATA,
+    STRUCT_DEFS,
+    FUNCTION_DEFS,
+}
+
+impl Distribution<CompiledModuleField> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> CompiledModuleField {
+        const ENUM_SIZE: usize = CompiledModuleField::VARIANT_COUNT;
+        println!("enum size {:?}", ENUM_SIZE);
+        match rng.gen_range(0..ENUM_SIZE) {
+            0 => CompiledModuleField::VERSION,
+            1 => CompiledModuleField::SELF_MODULE_HANDLE_IDX,
+            2 => CompiledModuleField::MODULE_HANDLES,
+            3 => CompiledModuleField::STRUCT_HANDLES,
+            4 => CompiledModuleField::FUNCTION_HANDLES,
+            5 => CompiledModuleField::FIELD_HANDLES,
+            6 => CompiledModuleField::FRIEND_DECLS,
+            7 => CompiledModuleField::STRUCT_DEF_INSTANTIATIONS,
+            8 => CompiledModuleField::FUNCTION_INSTANTIATIONS,
+            9 => CompiledModuleField::FIELD_INSTANTIATIONS,
+            10 => CompiledModuleField::SIGNATURES,
+            11 => CompiledModuleField::IDENTIFIERS,
+            12 => CompiledModuleField::ADDRESS_IDENTIFIERS,
+            13 => CompiledModuleField::CONSTANT_POOL,
+            14 => CompiledModuleField::METADATA,
+            15 => CompiledModuleField::STRUCT_DEFS,
+            16 => CompiledModuleField::FUNCTION_DEFS,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl CompiledModule {
+    pub fn print_field(&self, field: CompiledModuleField) {
+        match field {
+            CompiledModuleField::VERSION => println!("version: {:?}", self.version),
+            CompiledModuleField::SELF_MODULE_HANDLE_IDX => println!("self_module_handle_idx: {:?}", self.self_module_handle_idx),
+            CompiledModuleField::MODULE_HANDLES => println!("module_handles: {:?}", self.module_handles),
+            CompiledModuleField::STRUCT_HANDLES => println!("struct_handles: {:?}", self.struct_handles),
+            CompiledModuleField::FUNCTION_HANDLES => println!("function_handles: {:?}", self.function_handles),
+            CompiledModuleField::FIELD_HANDLES => println!("field_handles: {:?}", self.field_handles),
+            CompiledModuleField::FRIEND_DECLS => println!("friend_decls: {:?}", self.friend_decls),
+            CompiledModuleField::STRUCT_DEF_INSTANTIATIONS => println!("struct_def_instantiations: {:?}", self.struct_def_instantiations),
+            CompiledModuleField::FUNCTION_INSTANTIATIONS => println!("function_instantiations: {:?}", self.function_instantiations),
+            CompiledModuleField::FIELD_INSTANTIATIONS => println!("field_instantiations: {:?}", self.field_instantiations),
+            CompiledModuleField::SIGNATURES => println!("signatures: {:?}", self.signatures),
+            CompiledModuleField::IDENTIFIERS => println!("identifiers: {:?}", self.identifiers),
+            CompiledModuleField::ADDRESS_IDENTIFIERS => println!("address_identifiers: {:?}", self.address_identifiers),
+            CompiledModuleField::CONSTANT_POOL => println!("constant_pool: {:?}", self.constant_pool),
+            CompiledModuleField::METADATA => println!("metadata: {:?}", self.metadata),
+            CompiledModuleField::STRUCT_DEFS => println!("struct_defs: {:?}", self.struct_defs),
+            CompiledModuleField::FUNCTION_DEFS => println!("function_defs: {:?}", self.function_defs),
+            _ => println!("Field not found"),
+        }
+    }
 }
 
 // Need a custom implementation of Arbitrary because as of proptest-derive 0.1.1, the derivation
