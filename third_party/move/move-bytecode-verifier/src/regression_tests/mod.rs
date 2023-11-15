@@ -8,3 +8,6 @@ mod reference_analysis;
 
 #[cfg(test)]
 mod fuzz;
+
+#[cfg(test)]
+mod mutate;
