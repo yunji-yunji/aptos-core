@@ -445,6 +445,21 @@ impl VMRuntime {
         traversal_context: &mut TraversalContext,
         extensions: &mut NativeContextExtensions,
     ) -> VMResult<SerializedReturnValues> {
+        // load the function
+        let LoadedFunctionInstantiation {
+            type_arguments,
+            parameters,
+            return_,
+        } = function_instantiation;
+        let LoadedFunction { module, function } = func;
+
+        script_signature::verify_module_function_signature_by_name(
+            module.module(),
+            IdentStr::new(function.as_ref().name()).expect(""),
+            !bypass_declared_entry_check,
+        )?;
+
+        // execute the function
         self.execute_function_impl(
             func,
             serialized_args,
