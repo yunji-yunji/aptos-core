@@ -29,9 +29,10 @@ use rand::prelude::Distribution;
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
 use rand::seq::IteratorRandom;
-// use variant_count::VariantCount;
+use variant_count::VariantCount;
+use rand::distributions::Standard;
 
-const P: bool= true;
+const P: bool = true;
 
 fn mutate_vector<T>(vec:&mut Vec<T>, element: T) {
     // TODO: mutate order (if vector and if not empty and if more than 2)
@@ -89,7 +90,7 @@ fn generate_valid_identifier(length: usize) -> Identifier {
     }
 }
 
-#[derive(Debug, VariantCount, Copy)]
+#[derive(Debug, VariantCount, Copy, Clone)]
 enum MutateOP {
     DELETE,
     INSERT,
