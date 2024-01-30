@@ -1,11 +1,12 @@
-use move_binary_format::CompiledModule;
+use move_binary_format::{file_format, CompiledModule};
 use move_core_types::vm_status::StatusCode;
 
 use crate::verifier::verify_module;
 
 #[test]
 fn miri_path_fuzz() {
-    let module = CompiledModule::default();
+    // let module = CompiledModule::default();
+    let module = file_format::empty_module();
     match verify_module(&module) {
         Ok(_) => (),
         Err(e) => {
