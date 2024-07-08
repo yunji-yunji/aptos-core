@@ -10909,6 +10909,7 @@ dependencies = [
  "arbitrary",
  "backtrace",
  "indexmap 2.2.5",
+ "move-bytecode-spec",
  "move-core-types",
  "once_cell",
  "proptest",
