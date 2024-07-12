@@ -19,6 +19,8 @@ typed-arena = "2.0.2"
 move-borrow-graph = { path = "../move-borrow-graph" }
 move-core-types = { path = "../move-core/types" }
 
+serde_cbor = "0.11.1"
+byteorder = "1.5.0"
 rand = "0.8.3"
 syn = { version = "2.0.39", features = ["full"] }
 variant_count = "1.1.0"
