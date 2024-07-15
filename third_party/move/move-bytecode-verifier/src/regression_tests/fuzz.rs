@@ -1,14 +1,20 @@
 use std::io::{self, Read,Write};
 use std::fs::{self, File};
 
+use move_binary_format::file_format;
 use move_binary_format::CompiledModule;
 use move_core_types::vm_status::StatusCode;
 use crate::verifier::verify_module;
 
+// cargo test --package move-bytecode-verifier --lib -- regression_tests::fuzz::generate_test_module --exact --show-output
+#[test]
+fn generate_test_module() {
+    let module = file_format::empty_module();
+    write_cm_to_file(&module, "src/regression_tests/cm_sample").unwrap();
+}
+
 #[test]
 fn miri_path_fuzz() {
-
-    // let module = file_format::empty_module();
     let read_module = read_cm_stdin();
     let module = match read_module {
         Ok(m) => m,
