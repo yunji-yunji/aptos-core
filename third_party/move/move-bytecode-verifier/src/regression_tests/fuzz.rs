@@ -6,7 +6,7 @@ use move_binary_format::CompiledModule;
 use move_core_types::vm_status::StatusCode;
 use crate::verifier::verify_module;
 
-// cargo test --package move-bytecode-verifier --lib -- regression_tests::fuzz::generate_test_module --exact --show-output
+// cargo +fuzz test regression_tests::fuzz::generate_test_module -- --exact
 #[test]
 fn generate_test_module() {
     let module = file_format::empty_module();

@@ -63,7 +63,10 @@ while test $# -gt 0; do
                     regression_tests::fuzz::miri_path_fuzz -- \
                     --exact
             ;;
-        *)
+        -gentestcm)
+            cargo +fuzz test regression_tests::fuzz::generate_test_module -- --exact
+	    ;;
+    	*)
             echo "invalid argument $1"
             exit 1
             ;;
