@@ -10,7 +10,7 @@ use crate::verifier::verify_module;
 #[test]
 fn generate_test_module() {
     let module = file_format::empty_module();
-    write_cm_to_file(&module, "src/regression_tests/cm_sample").unwrap();
+    write_cm_to_file(&module, "src/regression_tests/new_inputs/cm_sample").unwrap();
 }
 
 #[test]
@@ -63,6 +63,6 @@ fn read_cm_from_file(file_path: &str) -> Result<CompiledModule, Box<dyn std::err
 fn read_cm_stdin() -> Result<CompiledModule, Box<dyn std::error::Error>> {
     let mut bytes = Vec::new();
     io::stdin().read_to_end(&mut bytes)?;
-    let module: CompiledModule = serde_cbor::from_slice(&bytes)?;
+    let module: CompiledModule = serde_cbor::from_slice(&bytes).expect("failed to deserialize CompiledModule");
     Ok(module)
 }

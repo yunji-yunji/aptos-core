@@ -357,7 +357,7 @@ pub struct FieldHandle {
 }
 
 /// A variant field access info
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
 #[cfg_attr(any(test, feature = "fuzzing"), proptest(no_params))]
 #[cfg_attr(feature = "fuzzing", derive(arbitrary::Arbitrary))]
@@ -372,7 +372,7 @@ pub struct VariantFieldHandle {
 }
 
 /// A struct variant access info
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
 #[cfg_attr(any(test, feature = "fuzzing"), proptest(no_params))]
 #[cfg_attr(feature = "fuzzing", derive(arbitrary::Arbitrary))]
@@ -485,7 +485,7 @@ pub struct StructDefInstantiation {
 }
 
 /// A complete or partial instantiation of a generic struct variant
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
 #[cfg_attr(any(test, feature = "fuzzing"), proptest(no_params))]
 #[cfg_attr(feature = "fuzzing", derive(arbitrary::Arbitrary))]
@@ -520,7 +520,7 @@ pub struct FieldInstantiation {
 }
 
 /// A complete or partial instantiation of a variant field.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
 #[cfg_attr(any(test, feature = "fuzzing"), proptest(no_params))]
 #[cfg_attr(feature = "fuzzing", derive(arbitrary::Arbitrary))]
@@ -557,7 +557,7 @@ pub struct FieldDefinition {
     pub signature: TypeSignature,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
 #[cfg_attr(any(test, feature = "fuzzing"), proptest(no_params))]
 #[cfg_attr(feature = "fuzzing", derive(arbitrary::Arbitrary))]
@@ -3548,6 +3548,10 @@ pub enum CompiledModuleField {
     METADATA,
     STRUCT_DEFS,
     FUNCTION_DEFS,
+    STRUCT_VARIANT_HANDLES,
+    STRUCT_VARIANT_INSTANTIATIONS,
+    VARIANT_FIELD_HANDLES,
+    VARIANT_FIELD_INSTANTIATIONS,
 }
 
 impl Distribution<CompiledModuleField> for Standard {
