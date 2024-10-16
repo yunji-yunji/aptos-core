@@ -3576,6 +3576,10 @@ impl Distribution<CompiledModuleField> for Standard {
             14 => CompiledModuleField::METADATA,
             15 => CompiledModuleField::STRUCT_DEFS,
             16 => CompiledModuleField::FUNCTION_DEFS,
+            17 => CompiledModuleField::STRUCT_VARIANT_HANDLES,
+            18 => CompiledModuleField::STRUCT_VARIANT_INSTANTIATIONS,
+            19 => CompiledModuleField::VARIANT_FIELD_HANDLES,
+            20 => CompiledModuleField::VARIANT_FIELD_INSTANTIATIONS,
             _ => unreachable!(),
         }
     }
@@ -3601,6 +3605,10 @@ impl CompiledModule {
             CompiledModuleField::METADATA => println!("metadata: {:?}", self.metadata),
             CompiledModuleField::STRUCT_DEFS => println!("struct_defs: {:?}", self.struct_defs),
             CompiledModuleField::FUNCTION_DEFS => println!("function_defs: {:?}", self.function_defs),
+            CompiledModuleField::STRUCT_VARIANT_HANDLES => println!("struct_variant_handles: {:?}", self.struct_variant_handles),
+            CompiledModuleField::STRUCT_VARIANT_INSTANTIATIONS => println!("struct_variant_instantiations: {:?}", self.struct_variant_instantiations),
+            CompiledModuleField::VARIANT_FIELD_HANDLES => println!("variant_field_handles: {:?}", self.variant_field_handles),
+            CompiledModuleField::VARIANT_FIELD_INSTANTIATIONS => println!("variant_field_instantiations: {:?}", self.variant_field_instantiations),
             _ => println!("Field not found"),
         }
     }
