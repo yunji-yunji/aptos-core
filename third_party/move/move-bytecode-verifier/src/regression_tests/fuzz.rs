@@ -10,7 +10,7 @@ use crate::verifier::verify_module;
 #[test]
 fn generate_test_module() {
     let module = file_format::empty_module();
-    write_cm_to_file(&module, "src/regression_tests/new_inputs/cm_sample").unwrap();
+    write_cm_to_file(&module, "src/regression_tests/inputs/cm_sample").unwrap();
 }
 
 #[test]
