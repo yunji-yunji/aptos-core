@@ -3557,7 +3557,7 @@ pub enum CompiledModuleField {
 impl Distribution<CompiledModuleField> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> CompiledModuleField {
         const ENUM_SIZE: usize = CompiledModuleField::VARIANT_COUNT;
-        println!("enum size {:?}", ENUM_SIZE);
+        // println!("enum size {:?}", ENUM_SIZE);
         match rng.gen_range(0..ENUM_SIZE) {
             0 => CompiledModuleField::Version,
             1 => CompiledModuleField::SelfModuleHandleIdx,
@@ -3586,29 +3586,29 @@ impl Distribution<CompiledModuleField> for Standard {
 }
 
 impl CompiledModule {
-    pub fn print_field(&self, field: &CompiledModuleField) {
+    pub fn display_field(&self, field: &CompiledModuleField) -> String {
         match field {
-            CompiledModuleField::Version => println!("version: {:?}", self.version),
-            CompiledModuleField::SelfModuleHandleIdx => println!("self_module_handle_idx: {:?}", self.self_module_handle_idx),
-            CompiledModuleField::ModuleHandles => println!("module_handles: {:?}", self.module_handles),
-            CompiledModuleField::StructHandles => println!("struct_handles: {:?}", self.struct_handles),
-            CompiledModuleField::FunctionHandles => println!("function_handles: {:?}", self.function_handles),
-            CompiledModuleField::FieldHandles => println!("field_handles: {:?}", self.field_handles),
-            CompiledModuleField::FriendDecls => println!("friend_decls: {:?}", self.friend_decls),
-            CompiledModuleField::StructDefInstantiations => println!("struct_def_instantiations: {:?}", self.struct_def_instantiations),
-            CompiledModuleField::FunctionInstantiations => println!("function_instantiations: {:?}", self.function_instantiations),
-            CompiledModuleField::FieldInstantiations => println!("field_instantiations: {:?}", self.field_instantiations),
-            CompiledModuleField::Signatures => println!("signatures: {:?}", self.signatures),
-            CompiledModuleField::Identifiers => println!("identifiers: {:?}", self.identifiers),
-            CompiledModuleField::AddressIdentifiers => println!("address_identifiers: {:?}", self.address_identifiers),
-            CompiledModuleField::ConstantPool => println!("constant_pool: {:?}", self.constant_pool),
-            CompiledModuleField::Metadata => println!("metadata: {:?}", self.metadata),
-            CompiledModuleField::StructDefs => println!("struct_defs: {:?}", self.struct_defs),
-            CompiledModuleField::FunctionDefs => println!("function_defs: {:?}", self.function_defs),
-            CompiledModuleField::StructVariantHandles => println!("struct_variant_handles: {:?}", self.struct_variant_handles),
-            CompiledModuleField::StructVariantInstantiations => println!("struct_variant_instantiations: {:?}", self.struct_variant_instantiations),
-            CompiledModuleField::VariantFieldHandles => println!("variant_field_handles: {:?}", self.variant_field_handles),
-            CompiledModuleField::VariantFieldInstantiations => println!("variant_field_instantiations: {:?}", self.variant_field_instantiations),
+            CompiledModuleField::Version => format!("version: {:?}", self.version),
+            CompiledModuleField::SelfModuleHandleIdx => format!("self_module_handle_idx: {:?}", self.self_module_handle_idx),
+            CompiledModuleField::ModuleHandles => format!("module_handles: {:?}", self.module_handles),
+            CompiledModuleField::StructHandles => format!("struct_handles: {:?}", self.struct_handles),
+            CompiledModuleField::FunctionHandles => format!("function_handles: {:?}", self.function_handles),
+            CompiledModuleField::FieldHandles => format!("field_handles: {:?}", self.field_handles),
+            CompiledModuleField::FriendDecls => format!("friend_decls: {:?}", self.friend_decls),
+            CompiledModuleField::StructDefInstantiations => format!("struct_def_instantiations: {:?}", self.struct_def_instantiations),
+            CompiledModuleField::FunctionInstantiations => format!("function_instantiations: {:?}", self.function_instantiations),
+            CompiledModuleField::FieldInstantiations => format!("field_instantiations: {:?}", self.field_instantiations),
+            CompiledModuleField::Signatures => format!("signatures: {:?}", self.signatures),
+            CompiledModuleField::Identifiers => format!("identifiers: {:?}", self.identifiers),
+            CompiledModuleField::AddressIdentifiers => format!("address_identifiers: {:?}", self.address_identifiers),
+            CompiledModuleField::ConstantPool => format!("constant_pool: {:?}", self.constant_pool),
+            CompiledModuleField::Metadata => format!("metadata: {:?}", self.metadata),
+            CompiledModuleField::StructDefs => format!("struct_defs: {:?}", self.struct_defs),
+            CompiledModuleField::FunctionDefs => format!("function_defs: {:?}", self.function_defs),
+            CompiledModuleField::StructVariantHandles => format!("struct_variant_handles: {:?}", self.struct_variant_handles),
+            CompiledModuleField::StructVariantInstantiations => format!("struct_variant_instantiations: {:?}", self.struct_variant_instantiations),
+            CompiledModuleField::VariantFieldHandles => format!("variant_field_handles: {:?}", self.variant_field_handles),
+            CompiledModuleField::VariantFieldInstantiations => format!("variant_field_instantiations: {:?}", self.variant_field_instantiations),
         }
     }
 }
