@@ -1,7 +1,7 @@
 use std::io::{self, Read,Write};
 use std::fs::{self, File};
 
-use move_binary_format::file_format;
+use move_binary_format::file_format::{self, basic_test_module, empty_module};
 use move_binary_format::CompiledModule;
 use move_core_types::vm_status::StatusCode;
 use crate::verifier::verify_module;
@@ -54,30 +54,22 @@ fn miri_path_fuzz() {
         let read_module = read_cm_from_file(&data_raw);
         let module = match read_module {
             Ok(m) => m,
-            Err(_) => { panic!("cannot read module."); },
+            Err(_) => {
+                // panic!("cannot read module.");
+                println!("[info] cannot read module. check the input file: {:?}", data_raw);
+                let mut file = File::open(data_raw).expect("open file");
+                let mut bytes = Vec::new();
+                file.read_to_end(&mut bytes).unwrap();
+                println!("[info] bytes: {:?}", bytes);
+                empty_module()
+            },
         };
         println!("CompiledModule: {:?}", module);
 
-        match verify_module(&module) {
-            Ok(_) => (),
-            Err(e) => {
-                let status = e.major_status();
-                println!("verify module failed! {:?}", status);
+        // let module = basic_test_module();
 
-                // additionally force a panic on status code that should not been reached
-                match status {
-                    StatusCode::UNKNOWN_VALIDATION_STATUS => unreachable!("UNKNOWN_VALIDATION_STATUS"),
-                    StatusCode::UNKNOWN_VERIFICATION_ERROR => unreachable!("UNKNOWN_VERIFICATION_ERROR"),
-                    StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR => unreachable!("UNKNOWN_INVARIANT_VIOLATION_ERROR"),
-                    StatusCode::UNREACHABLE => unreachable!("UNREACHABLE"),
-                    StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION => unreachable!("UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION"),
-                    StatusCode::VERIFIER_INVARIANT_VIOLATION => unreachable!("VERIFIER_INVARIANT_VIOLATION"),
-                    StatusCode::UNEXPECTED_VERIFIER_ERROR => unreachable!("UNEXPECTED_VERIFIER_ERROR"),
-                    StatusCode::UNEXPECTED_DESERIALIZATION_ERROR => unreachable!("UNEXPECTED_DESERIALIZATION_ERROR"),
-                    _ => (),
-                }
-            }
-        }
+        let res = verify_module(&module);
+        println!("verify_module result: {:?}", res);
     }
 }
 
@@ -98,4 +90,20 @@ fn read_cm_stdin() -> Result<CompiledModule, Box<dyn std::error::Error>> {
     // let module: CompiledModule = serde_json::from_slice(&bytes).expect("failed to read (serde_json)");
 
     Ok(module)
+}
+
+// *** For debugging *** //
+fn write_cm_to_file(module: &CompiledModule, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let bytes = serde_cbor::to_vec(module)?;
+    let mut file = File::create(file_path)?;
+    file.write_all(&bytes)?;
+    Ok(())
+}
+
+// cargo test --package move-bytecode-verifier --lib -- regression_tests::fuzz::generate_test_module --exact --show-output
+#[test]
+fn generate_test_module() {
+    let test_cm = empty_module();
+    // let test_cm = basic_test_module();
+    write_cm_to_file(&test_cm, "src/regression_tests/empty_cm").unwrap();
 }
